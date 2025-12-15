@@ -72,6 +72,19 @@ Upload a file to extract timetable.
 }
 ```
 
+### GET /api/health
+Check API and Database health.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "database": "connected",
+  "latency": "15ms",
+  "timestamp": "2023-10-27T10:00:00.000Z"
+}
+```
+
 ## Architecture
 - **Controllers**: Handle HTTP requests.
 - **Services**: Business logic (Extraction, Verification).

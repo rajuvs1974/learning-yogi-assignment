@@ -50,4 +50,18 @@ const uploadMiddleware = (req: any, res: any, next: any) => {
 
 router.post('/process', uploadMiddleware, uploadFile);
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Check API and Database health
+ *     responses:
+ *       200:
+ *         description: System is healthy
+ *       500:
+ *         description: System is unhealthy
+ */
+import { checkHealth } from '../controllers/healthController';
+router.get('/health', checkHealth);
+
 export default router;
