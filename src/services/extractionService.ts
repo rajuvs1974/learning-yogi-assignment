@@ -38,7 +38,7 @@ export class ExtractionService {
                             content: [
                                 {
                                     type: 'text',
-                                    text: 'Extract all text from this PDF document, including any tables, schedules, or structured data. Return the text exactly as it appears, preserving formatting and structure.'
+                                    text: 'You are viewing a PDF document containing a timetable/schedule. Please read all the text visible in this document and transcribe it exactly as shown, including headers, time slots, day names, subject names, and any other text. Preserve the table structure and layout in your transcription. Do not provide instructions on how to extract text - just transcribe what you see.'
                                 },
                                 {
                                     type: 'image_url',
@@ -77,7 +77,7 @@ export class ExtractionService {
                         content: [
                             {
                                 type: 'text',
-                                text: 'Extract all text from this image, including any tables, schedules, or structured data. Return the text exactly as it appears, preserving formatting and structure.'
+                                text: 'You are viewing an image containing a timetable/schedule. Please read all the text visible in this image and transcribe it exactly as shown, including headers, time slots, day names, subject names, and any other text. Preserve the table structure and layout in your transcription. Do not provide instructions on how to extract text - just transcribe what you see.'
                             },
                             {
                                 type: 'image_url',

@@ -20,10 +20,24 @@ export class TimetablePreprocessor {
 
         // Patterns for detection
         const gridIndicators = [
+            // Horizontal day layout (days on same line)
             /\bMonday\b.*\bTuesday\b.*\bWednesday\b/i,
             /\bMon\b.*\bTue\b.*\bWed\b/i,
             /\|\s*Mon\s*\||\|\s*Monday\s*\|/i, // Table borders
-            /\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}.*\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/, // Multiple time ranges on same line
+
+            // Vertical day layout (days in rows with times in columns)
+            /^[MTWThF]\s+.*\d{1,2}[:.]\d{2}/m, // Single letter day followed by time
+            /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+.*\d{1,2}[:.]\d{2}/im, // Abbreviated day followed by time
+            /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+.*\d{1,2}[:.]\d{2}/im, // Full day followed by time
+
+            // Time slots arranged horizontally (multiple times on same line)
+            /\d{1,2}[:.]\d{2}\s*-?\s*\d{1,2}[:.]\d{2}.*\d{1,2}[:.]\d{2}\s*-?\s*\d{1,2}[:.]\d{2}/, // Multiple time ranges on same line
+            /\d{1,2}[:.]\d{2}.*\d{1,2}[:.]\d{2}.*\d{1,2}[:.]\d{2}/, // Three or more times on same line
+
+            // Timetable/schedule specific patterns
+            /\btimetable\b/i,
+            /\bschedule\b/i,
+            /\breception.*timetable/i,
         ];
 
         const listIndicators = [
@@ -33,14 +47,20 @@ export class TimetablePreprocessor {
         ];
 
         const metadataIndicators = [
-            /\b(School|Class|Term|Teacher|Week|Year):\s*\w+/i,
+            /\b(School|Class|Term|Teacher|Week|Year|Reception):\s*\w+/i,
             /\bClass:\s*\w+/i,
             /\bTerm:\s*\w+/i,
             /\bTeacher:\s*\w+/i,
+            /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}/i, // Month and year
         ];
 
-        // Check for grid format
-        const hasGridIndicators = gridIndicators.some(pattern => pattern.test(text));
+        // Count how many grid indicators match
+        let gridIndicatorCount = 0;
+        for (const pattern of gridIndicators) {
+            if (pattern.test(text)) {
+                gridIndicatorCount++;
+            }
+        }
 
         // Check for list format
         const hasListIndicators = listIndicators.some(pattern => pattern.test(text));
@@ -48,19 +68,33 @@ export class TimetablePreprocessor {
         // Check for metadata
         const hasMetadata = metadataIndicators.some(pattern => pattern.test(text));
 
-        // Determine format type
+        // Determine format type with improved confidence scoring
         let formatType: 'grid' | 'list' | 'mixed' | 'unknown' = 'unknown';
         let confidence = 0.5;
 
-        if (hasGridIndicators && hasListIndicators) {
+        if (gridIndicatorCount > 0 && hasListIndicators) {
             formatType = 'mixed';
             confidence = 0.7;
-        } else if (hasGridIndicators) {
+        } else if (gridIndicatorCount >= 3) {
+            // Strong evidence of grid format
+            formatType = 'grid';
+            confidence = 0.9;
+        } else if (gridIndicatorCount >= 2) {
+            // Moderate evidence of grid format
             formatType = 'grid';
             confidence = 0.8;
+        } else if (gridIndicatorCount >= 1) {
+            // Some evidence of grid format
+            formatType = 'grid';
+            confidence = 0.7;
         } else if (hasListIndicators) {
             formatType = 'list';
             confidence = 0.8;
+        }
+
+        // Boost confidence if we have metadata (indicates structured document)
+        if (hasMetadata && formatType !== 'unknown') {
+            confidence = Math.min(confidence + 0.1, 1.0);
         }
 
         // Detect day format
@@ -83,8 +117,8 @@ export class TimetablePreprocessor {
      */
     private static detectDayFormat(text: string): 'full' | 'abbreviated' | 'single' | 'mixed' {
         const fullDays = /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/gi;
-        const abbreviatedDays = /\b(Mon|Tue|Tues|Wed|Thu|Thur|Thurs|Fri|Sat|Sun)\b/gi;
-        const singleLetterDays = /\b[MTWF]\b(?!\w)/g; // M, T, W, F (not part of a word)
+        const abbreviatedDays = /\b(Mon|Tue|Tues|Wed|Thu|Thur|Thurs|Fri|Sat|Sun|Tu|Th)\b/gi;
+        const singleLetterDays = /\b[MTWFS]\b(?!\w)/g; // M, T, W, F, S (not part of a word)
 
         const hasFullDays = fullDays.test(text);
         const hasAbbreviated = abbreviatedDays.test(text);
@@ -103,8 +137,8 @@ export class TimetablePreprocessor {
      * Detect the time format used
      */
     private static detectTimeFormat(text: string): '12hour' | '24hour' | 'period' | 'mixed' {
-        const time12hour = /\d{1,2}:\d{2}\s*(AM|PM|am|pm|a\.m\.|p\.m\.)/gi;
-        const time24hour = /\b([01]?\d|2[0-3]):[0-5]\d\b/g;
+        const time12hour = /\d{1,2}[:.]\d{2}\s*(AM|PM|am|pm|a\.m\.|p\.m\.)/gi;
+        const time24hour = /\b([01]?\d|2[0-3])[:.][0-5]\d\b/g;
         const periodFormat = /\b(Period|P)\s*\d+\b/gi;
 
         const has12hour = time12hour.test(text);
