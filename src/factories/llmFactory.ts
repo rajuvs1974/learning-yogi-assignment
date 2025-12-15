@@ -359,7 +359,7 @@ Return ONLY valid JSON with this structure:
   ]
 }`;
 
-        const model = this.client.getGenerativeModel({ model: 'gemini-pro' });
+        const model = this.client.getGenerativeModel({ model: 'gemini-2.5-flash' });
         const prompt = `${systemPrompt}\n\nExtract timetable data from the following text:\n\n${text}`;
 
         const result = await model.generateContent(prompt);
@@ -381,7 +381,7 @@ Return ONLY valid JSON with this structure:
     }
 
     async verifyExtraction(originalText: string, extractedData: any): Promise<{ confidence: number; isValid: boolean }> {
-        const model = this.client.getGenerativeModel({ model: 'gemini-pro' });
+        const model = this.client.getGenerativeModel({ model: 'gemini-2.5-flash' });
         const prompt = `Verify if the following JSON data accurately represents the timetable in the text provided.
         Original Text: ${originalText.substring(0, 5000)}...
         Extracted Data: ${JSON.stringify(extractedData)}
@@ -407,6 +407,70 @@ Return ONLY valid JSON with this structure:
     }
 }
 
+export class GeminiWithFallbackProvider implements LLMProvider {
+    private geminiProvider: GeminiProvider;
+    private openaiProvider: OpenAIProvider;
+
+    constructor() {
+        this.geminiProvider = new GeminiProvider();
+        this.openaiProvider = new OpenAIProvider();
+    }
+
+    async extractTimetable(text: string): Promise<any> {
+        try {
+            console.log('Attempting extraction with Gemini...');
+            const result = await this.geminiProvider.extractTimetable(text);
+
+            // Check if result is empty or invalid
+            if (!result || Object.keys(result).length === 0) {
+                throw new Error('Gemini returned empty result');
+            }
+
+            console.log('Gemini extraction successful');
+            return result;
+        } catch (error) {
+            console.warn('Gemini failed, falling back to OpenAI:', error instanceof Error ? error.message : error);
+            console.log('Attempting extraction with OpenAI fallback...');
+
+            try {
+                const result = await this.openaiProvider.extractTimetable(text);
+                console.log('OpenAI fallback extraction successful');
+                return result;
+            } catch (fallbackError) {
+                console.error('OpenAI fallback also failed:', fallbackError instanceof Error ? fallbackError.message : fallbackError);
+                throw new Error('Both Gemini and OpenAI providers failed');
+            }
+        }
+    }
+
+    async verifyExtraction(originalText: string, extractedData: any): Promise<{ confidence: number; isValid: boolean }> {
+        try {
+            console.log('Attempting verification with Gemini...');
+            const result = await this.geminiProvider.verifyExtraction(originalText, extractedData);
+
+            // Check if result is valid
+            if (!result || typeof result.confidence === 'undefined' || typeof result.isValid === 'undefined') {
+                throw new Error('Gemini returned invalid verification result');
+            }
+
+            console.log('Gemini verification successful');
+            return result;
+        } catch (error) {
+            console.warn('Gemini verification failed, falling back to OpenAI:', error instanceof Error ? error.message : error);
+            console.log('Attempting verification with OpenAI fallback...');
+
+            try {
+                const result = await this.openaiProvider.verifyExtraction(originalText, extractedData);
+                console.log('OpenAI fallback verification successful');
+                return result;
+            } catch (fallbackError) {
+                console.error('OpenAI fallback verification also failed:', fallbackError instanceof Error ? fallbackError.message : fallbackError);
+                throw new Error('Both Gemini and OpenAI verification failed');
+            }
+        }
+    }
+}
+
 export class LLMFactory {
     static getProvider(type?: 'openai' | 'claude' | 'mock' | 'deepseek' | 'gemini'): LLMProvider {
         // Use environment-configured provider if no type is specified
@@ -422,7 +486,8 @@ export class LLMFactory {
             return new DeepSeekProvider();
         }
         if (providerType === 'gemini' && config.geminiApiKey) {
-            return new GeminiProvider();
+            // Return Gemini with OpenAI fallback
+            return new GeminiWithFallbackProvider();
         }
         return new MockProvider();
     }
