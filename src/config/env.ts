@@ -6,6 +6,6 @@ export const config = {
     port: process.env.PORT || 3000,
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-    postgresUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/Timetable',
+    postgresUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres',
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
 };

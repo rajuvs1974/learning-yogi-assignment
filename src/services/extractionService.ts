@@ -2,6 +2,7 @@ import fs from 'fs';
 const pdfParse = require('pdf-parse');
 import mammoth from 'mammoth';
 import Tesseract from 'tesseract.js';
+const WordExtractor = require('word-extractor');
 import { LLMFactory } from '../factories/llmFactory';
 import { query } from '../db';
 
@@ -17,6 +18,10 @@ export class ExtractionService {
         } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             const result = await mammoth.extractRawText({ path: file.path });
             text = result.value;
+        } else if (file.mimetype === 'application/msword') {
+            const extractor = new WordExtractor();
+            const extracted = await extractor.extract(file.path);
+            text = extracted.getBody();
         } else if (file.mimetype.startsWith('image/')) {
             const result = await Tesseract.recognize(file.path, 'eng');
             text = result.data.text;
@@ -33,7 +38,7 @@ export class ExtractionService {
         const verification = await verifier.verifyExtraction(text, extractedData);
 
         // 4. Check Confidence
-        if (verification.confidence < 70) {
+        if (verification.confidence < 0.7) {
             throw new Error(`Confidence score too low: ${verification.confidence}%`);
         }
 

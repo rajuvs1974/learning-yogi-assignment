@@ -3,7 +3,7 @@
 Node.js backend to extract timetable data from PDF, Images, and DOCX files using LLMs.
 
 ## Features
-- **File Upload**: Supports PDF, JPG, PNG, DOCX (max 5MB).
+- **File Upload**: Supports PDF, JPG, PNG, DOC, DOCX (max 5MB).
 - **Text Extraction**: Uses `pdf-parse`, `tesseract.js`, and `mammoth`.
 - **LLM Processing**: Extracts structured timetable data using OpenAI or DeepSeek (configurable).
 - **Verification**: Validates extraction confidence using Claude (Anthropic).

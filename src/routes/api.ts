@@ -24,11 +24,17 @@ const upload = multer({
  *     summary: Upload a file to extract timetable
  *     consumes:
  *       - multipart/form-data
- *     parameters:
- *       - in: formData
- *         name: file
- *         type: file
- *         description: The file to upload (PDF, Image, DOCX)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: The file to upload (PDF, Image, DOCX)
  *     responses:
  *       200:
  *         description: Successful extraction
