@@ -98,12 +98,14 @@ export class ExtractionService {
 
         console.log('Format detected:', format);
 
-        // 3. Extract Timetable using OpenAI (or primary LLM)
-        const extractor = LLMFactory.getProvider('openai');
+        // 3. Extract Timetable using configured LLM provider from .env
+        const extractor = LLMFactory.getProvider();
         const extractedData = await extractor.extractTimetable(processedText);
 
-        // 4. Verify using Claude (or secondary LLM)
-        const verifier = LLMFactory.getProvider('claude');
+        // 4. Verify using a different LLM provider (for dual verification)
+        // Use Claude if main provider is not Claude, otherwise use Gemini
+        const verificationProvider = config.llmProvider === 'claude' ? 'gemini' : 'claude';
+        const verifier = LLMFactory.getProvider(verificationProvider);
         const verification = await verifier.verifyExtraction(text, extractedData);
 
         // 5. Check Confidence

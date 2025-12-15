@@ -408,17 +408,20 @@ Return ONLY valid JSON with this structure:
 }
 
 export class LLMFactory {
-    static getProvider(type: 'openai' | 'claude' | 'mock' | 'deepseek' | 'gemini' = 'openai'): LLMProvider {
-        if (type === 'openai' && config.openaiApiKey) {
+    static getProvider(type?: 'openai' | 'claude' | 'mock' | 'deepseek' | 'gemini'): LLMProvider {
+        // Use environment-configured provider if no type is specified
+        const providerType = type || config.llmProvider;
+
+        if (providerType === 'openai' && config.openaiApiKey) {
             return new OpenAIProvider();
         }
-        if (type === 'claude' && config.anthropicApiKey) {
+        if (providerType === 'claude' && config.anthropicApiKey) {
             return new ClaudeProvider();
         }
-        if (type === 'deepseek' && config.deepseekApiKey) {
+        if (providerType === 'deepseek' && config.deepseekApiKey) {
             return new DeepSeekProvider();
         }
-        if (type === 'gemini' && config.geminiApiKey) {
+        if (providerType === 'gemini' && config.geminiApiKey) {
             return new GeminiProvider();
         }
         return new MockProvider();
