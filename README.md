@@ -47,6 +47,12 @@ Node.js backend to extract timetable data from PDF, Images, and DOCX files using
     npx ts-node src/app.ts
     ```
 
+## Testing
+To run the unit tests for file validation:
+```bash
+npm test
+```
+
 ## API Endpoints
 
 ### POST /api/process

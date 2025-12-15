@@ -37,6 +37,17 @@ const upload = multer({
  *       500:
  *         description: Server error
  */
-router.post('/process', upload.single('file'), uploadFile);
+const uploadMiddleware = (req: any, res: any, next: any) => {
+    upload.single('file')(req, res, (err: any) => {
+        if (err instanceof multer.MulterError) {
+            return res.status(400).json({ error: err.message });
+        } else if (err) {
+            return res.status(400).json({ error: err.message });
+        }
+        next();
+    });
+};
+
+router.post('/process', uploadMiddleware, uploadFile);
 
 export default router;
