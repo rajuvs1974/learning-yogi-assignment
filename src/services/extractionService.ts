@@ -18,21 +18,20 @@ export class ExtractionService {
             const data = await pdfParse(dataBuffer);
             text = data.text;
 
-            // If PDF has no text (scanned PDF), use DeepSeek vision API for OCR
+            // If PDF has no text (scanned PDF), use OpenAI vision API for OCR
             if (!text || text.trim().length < 50) {
-                console.log('PDF appears to be scanned or has minimal text. Using DeepSeek OCR...');
+                console.log('PDF appears to be scanned or has minimal text. Using OpenAI OCR...');
 
-                const deepseekClient = new OpenAI({
-                    apiKey: config.deepseekApiKey,
-                    baseURL: 'https://api.deepseek.com'
+                const openaiClient = new OpenAI({
+                    apiKey: config.openaiApiKey
                 });
 
                 // Convert PDF to base64
                 const base64Pdf = dataBuffer.toString('base64');
                 const pdfUrl = `data:application/pdf;base64,${base64Pdf}`;
 
-                const response = await deepseekClient.chat.completions.create({
-                    model: 'deepseek-chat',
+                const response = await openaiClient.chat.completions.create({
+                    model: 'gpt-4o',
                     messages: [
                         {
                             role: 'user',
@@ -60,10 +59,9 @@ export class ExtractionService {
             const extracted = await extractor.extract(file.path);
             text = extracted.getBody();
         } else if (file.mimetype.startsWith('image/')) {
-            // Use DeepSeek vision API for OCR
-            const deepseekClient = new OpenAI({
-                apiKey: config.deepseekApiKey,
-                baseURL: 'https://api.deepseek.com'
+            // Use OpenAI vision API for OCR
+            const openaiClient = new OpenAI({
+                apiKey: config.openaiApiKey
             });
 
             // Read image and convert to base64
@@ -71,8 +69,8 @@ export class ExtractionService {
             const base64Image = imageBuffer.toString('base64');
             const imageUrl = `data:${file.mimetype};base64,${base64Image}`;
 
-            const response = await deepseekClient.chat.completions.create({
-                model: 'deepseek-chat',
+            const response = await openaiClient.chat.completions.create({
+                model: 'gpt-4o',
                 messages: [
                     {
                         role: 'user',
