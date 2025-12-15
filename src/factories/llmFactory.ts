@@ -14,12 +14,79 @@ export class OpenAIProvider implements LLMProvider {
     }
 
     async extractTimetable(text: string): Promise<any> {
+        const systemPrompt = `You are an expert at extracting timetable/schedule data from various formats.
+
+IMPORTANT INSTRUCTIONS:
+1. Handle MULTIPLE timetable formats:
+   - Grid-based: Days in rows/columns, time slots in headers/cells
+   - List format: Numbered items with times and activities
+   - Mixed format: Combination of both
+
+2. Extract ALL schedule entries, including:
+   - Day (Monday/Mon/M/Tuesday/etc.)
+   - Time (9:00 AM, 09:00-10:00, 9:00-10:00 AM, etc.)
+   - Subject/Activity name
+   - Room number/location (if present)
+   - Instructor/Teacher name (if present)
+   - Additional notes or details (if present)
+
+3. Handle METADATA at top of document:
+   - School name
+   - Class name (e.g., "2EJ", "4M", "Reception")
+   - Term/Semester (e.g., "Autumn 2024", "Spring 2")
+   - Week number
+   - Teacher name
+   - Academic year
+
+4. Time format handling:
+   - Preserve original time format
+   - Handle ranges: "9:00-10:00", "9:00 - 10:00", "9:00-10:00 AM"
+   - Handle single times: "9:00", "9:00 AM"
+   - Handle periods: "Period 1", "P1"
+
+5. Day format handling:
+   - Full names: "Monday", "Tuesday"
+   - Abbreviations: "Mon", "Tue", "Wed", "Thu", "Fri"
+   - Single letters: "M", "T", "W", "Th", "F"
+   - Ranges: "Mon-Fri"
+
+6. Extract ALL cells/entries even if they contain:
+   - Break times
+   - Lunch periods
+   - Assembly
+   - Registration/Register
+   - Special activities
+
+Return ONLY valid JSON with this structure:
+{
+  "title": "optional timetable title",
+  "metadata": {
+    "schoolName": "optional",
+    "className": "optional",
+    "term": "optional",
+    "week": "optional",
+    "teacher": "optional",
+    "academicYear": "optional"
+  },
+  "entries": [
+    {
+      "day": "day name",
+      "time": "time or time range",
+      "subject": "subject/activity name",
+      "room": "optional room/location",
+      "instructor": "optional teacher name",
+      "notes": "optional additional details",
+      "duration": "optional duration"
+    }
+  ]
+}`;
+
         const response = await this.client.chat.completions.create({
             model: 'gpt-4o',
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a helpful assistant that extracts timetable data from text. Return ONLY JSON matching this structure: { title: string, entries: [{ day: string, time: string, subject: string, room?: string, instructor?: string }] }',
+                    content: systemPrompt,
                 },
                 { role: 'user', content: text },
             ],
@@ -106,12 +173,79 @@ export class DeepSeekProvider implements LLMProvider {
     }
 
     async extractTimetable(text: string): Promise<any> {
+        const systemPrompt = `You are an expert at extracting timetable/schedule data from various formats.
+
+IMPORTANT INSTRUCTIONS:
+1. Handle MULTIPLE timetable formats:
+   - Grid-based: Days in rows/columns, time slots in headers/cells
+   - List format: Numbered items with times and activities
+   - Mixed format: Combination of both
+
+2. Extract ALL schedule entries, including:
+   - Day (Monday/Mon/M/Tuesday/etc.)
+   - Time (9:00 AM, 09:00-10:00, 9:00-10:00 AM, etc.)
+   - Subject/Activity name
+   - Room number/location (if present)
+   - Instructor/Teacher name (if present)
+   - Additional notes or details (if present)
+
+3. Handle METADATA at top of document:
+   - School name
+   - Class name (e.g., "2EJ", "4M", "Reception")
+   - Term/Semester (e.g., "Autumn 2024", "Spring 2")
+   - Week number
+   - Teacher name
+   - Academic year
+
+4. Time format handling:
+   - Preserve original time format
+   - Handle ranges: "9:00-10:00", "9:00 - 10:00", "9:00-10:00 AM"
+   - Handle single times: "9:00", "9:00 AM"
+   - Handle periods: "Period 1", "P1"
+
+5. Day format handling:
+   - Full names: "Monday", "Tuesday"
+   - Abbreviations: "Mon", "Tue", "Wed", "Thu", "Fri"
+   - Single letters: "M", "T", "W", "Th", "F"
+   - Ranges: "Mon-Fri"
+
+6. Extract ALL cells/entries even if they contain:
+   - Break times
+   - Lunch periods
+   - Assembly
+   - Registration/Register
+   - Special activities
+
+Return ONLY valid JSON with this structure:
+{
+  "title": "optional timetable title",
+  "metadata": {
+    "schoolName": "optional",
+    "className": "optional",
+    "term": "optional",
+    "week": "optional",
+    "teacher": "optional",
+    "academicYear": "optional"
+  },
+  "entries": [
+    {
+      "day": "day name",
+      "time": "time or time range",
+      "subject": "subject/activity name",
+      "room": "optional room/location",
+      "instructor": "optional teacher name",
+      "notes": "optional additional details",
+      "duration": "optional duration"
+    }
+  ]
+}`;
+
         const response = await this.client.chat.completions.create({
             model: 'deepseek-chat',
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a helpful assistant that extracts timetable data from text. Return ONLY JSON matching this structure: { title: string, entries: [{ day: string, time: string, subject: string, room?: string, instructor?: string }] }',
+                    content: systemPrompt,
                 },
                 { role: 'user', content: text },
             ],
