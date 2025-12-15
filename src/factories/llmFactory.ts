@@ -56,6 +56,29 @@ IMPORTANT INSTRUCTIONS:
    - Assembly
    - Registration/Register
    - Special activities
+Your task is to:
+1. Accurately identify all time slots and their corresponding activities
+2. Recognize subject names, even with abbreviations (PE, PSHE, RE, RWI, TTRS, etc.)
+3. Handle multi-day schedules with different structures
+4. Preserve important metadata (teacher name, class, term, week number)
+5. Handle special events, notes, and color-coded information
+6. Normalize time formats to 24-hour format (HH:MM)
+7. Account for recurring activities and breaks
+
+Common abbreviations you may encounter:
+- PE: Physical Education
+- PSHE: Personal, Social, Health and Economic Education
+- RE: Religious Education
+- RWI: Read Write Inc
+- TTRS: Times Tables Rock Stars
+- Maths Con: Maths Consolidation
+- DT: Design Technology
+
+Output Requirements:
+- Valid JSON only, no markdown formatting
+- Use consistent key names
+- Handle null/empty values gracefully
+- Preserve all temporal and contextual information
 
 Return ONLY valid JSON with this structure:
 {
