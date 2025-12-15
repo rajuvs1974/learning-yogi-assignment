@@ -95,13 +95,47 @@ export class ClaudeProvider implements LLMProvider {
     }
 }
 
+export class DeepSeekProvider implements LLMProvider {
+    private client: OpenAI;
+
+    constructor() {
+        this.client = new OpenAI({
+            apiKey: config.deepseekApiKey,
+            baseURL: 'https://api.deepseek.com'
+        });
+    }
+
+    async extractTimetable(text: string): Promise<any> {
+        const response = await this.client.chat.completions.create({
+            model: 'deepseek-chat',
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a helpful assistant that extracts timetable data from text. Return ONLY JSON matching this structure: { title: string, entries: [{ day: string, time: string, subject: string, room?: string, instructor?: string }] }',
+                },
+                { role: 'user', content: text },
+            ],
+            response_format: { type: 'json_object' },
+        });
+        return JSON.parse(response.choices[0].message.content || '{}');
+    }
+
+    async verifyExtraction(originalText: string, extractedData: any): Promise<{ confidence: number; isValid: boolean }> {
+        // Placeholder verification for DeepSeek
+        return { confidence: 0.9, isValid: true };
+    }
+}
+
 export class LLMFactory {
-    static getProvider(type: 'openai' | 'claude' | 'mock' = 'openai'): LLMProvider {
+    static getProvider(type: 'openai' | 'claude' | 'mock' | 'deepseek' = 'openai'): LLMProvider {
         if (type === 'openai' && config.openaiApiKey) {
             return new OpenAIProvider();
         }
         if (type === 'claude' && config.anthropicApiKey) {
             return new ClaudeProvider();
+        }
+        if (type === 'deepseek' && config.deepseekApiKey) {
+            return new DeepSeekProvider();
         }
         return new MockProvider();
     }

@@ -7,4 +7,5 @@ export const config = {
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     postgresUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/timetable_db',
+    deepseekApiKey: process.env.DEEPSEEK_API_KEY,
 };
