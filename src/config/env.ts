@@ -8,4 +8,5 @@ export const config = {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     postgresUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres',
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
+    geminiApiKey: process.env.GEMINI_API_KEY,
 };

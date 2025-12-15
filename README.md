@@ -5,8 +5,8 @@ Node.js backend to extract timetable data from PDF, Images, and DOCX files using
 ## Features
 - **File Upload**: Supports PDF, JPG, PNG, DOC, DOCX (max 5MB).
 - **Text Extraction**: Uses `pdf-parse`, `tesseract.js`, and `mammoth`.
-- **LLM Processing**: Extracts structured timetable data using OpenAI or DeepSeek (configurable).
-- **Verification**: Validates extraction confidence using Claude (Anthropic).
+- **LLM Processing**: Extracts structured timetable data using OpenAI, DeepSeek, or Gemini Pro (configurable).
+- **Verification**: Validates extraction confidence using Claude (Anthropic) or Gemini Pro.
 - **Database**: Stores results in PostgreSQL.
 - **Validation**: Uses Zod for schema validation.
 - **Documentation**: Swagger UI available at `/api-docs`.
@@ -14,9 +14,10 @@ Node.js backend to extract timetable data from PDF, Images, and DOCX files using
 ## Prerequisites
 - Node.js (v18+)
 - PostgreSQL
-- OpenAI API Key
-- Anthropic API Key
-- DeepSeek API Key
+- OpenAI API Key (optional)
+- Anthropic API Key (optional)
+- DeepSeek API Key (optional)
+- Google Gemini API Key (optional)
 
 ## Setup
 
@@ -33,6 +34,7 @@ Node.js backend to extract timetable data from PDF, Images, and DOCX files using
     OPENAI_API_KEY=your_openai_key
     ANTHROPIC_API_KEY=your_anthropic_key
     DEEPSEEK_API_KEY=your_deepseek_key
+    GEMINI_API_KEY=your_gemini_key
     ```
 
 3.  **Build**

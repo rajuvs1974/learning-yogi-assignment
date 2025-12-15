@@ -120,6 +120,7 @@ export class MockProvider implements LLMProvider {
 }
 
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export class ClaudeProvider implements LLMProvider {
     private client: Anthropic;
@@ -260,8 +261,131 @@ Return ONLY valid JSON with this structure:
     }
 }
 
+export class GeminiProvider implements LLMProvider {
+    private client: GoogleGenerativeAI;
+
+    constructor() {
+        this.client = new GoogleGenerativeAI(config.geminiApiKey || '');
+    }
+
+    async extractTimetable(text: string): Promise<any> {
+        const systemPrompt = `You are an expert at extracting timetable/schedule data from various formats.
+
+IMPORTANT INSTRUCTIONS:
+1. Handle MULTIPLE timetable formats:
+   - Grid-based: Days in rows/columns, time slots in headers/cells
+   - List format: Numbered items with times and activities
+   - Mixed format: Combination of both
+
+2. Extract ALL schedule entries, including:
+   - Day (Monday/Mon/M/Tuesday/etc.)
+   - Time (9:00 AM, 09:00-10:00, 9:00-10:00 AM, etc.)
+   - Subject/Activity name
+   - Room number/location (if present)
+   - Instructor/Teacher name (if present)
+   - Additional notes or details (if present)
+
+3. Handle METADATA at top of document:
+   - School name
+   - Class name (e.g., "2EJ", "4M", "Reception")
+   - Term/Semester (e.g., "Autumn 2024", "Spring 2")
+   - Week number
+   - Teacher name
+   - Academic year
+
+4. Time format handling:
+   - Preserve original time format
+   - Handle ranges: "9:00-10:00", "9:00 - 10:00", "9:00-10:00 AM"
+   - Handle single times: "9:00", "9:00 AM"
+   - Handle periods: "Period 1", "P1"
+
+5. Day format handling:
+   - Full names: "Monday", "Tuesday"
+   - Abbreviations: "Mon", "Tue", "Wed", "Thu", "Fri"
+   - Single letters: "M", "T", "W", "Th", "F"
+   - Ranges: "Mon-Fri"
+
+6. Extract ALL cells/entries even if they contain:
+   - Break times
+   - Lunch periods
+   - Assembly
+   - Registration/Register
+   - Special activities
+
+Return ONLY valid JSON with this structure:
+{
+  "title": "optional timetable title",
+  "metadata": {
+    "schoolName": "optional",
+    "className": "optional",
+    "term": "optional",
+    "week": "optional",
+    "teacher": "optional",
+    "academicYear": "optional"
+  },
+  "entries": [
+    {
+      "day": "day name",
+      "time": "time or time range",
+      "subject": "subject/activity name",
+      "room": "optional room/location",
+      "instructor": "optional teacher name",
+      "notes": "optional additional details",
+      "duration": "optional duration"
+    }
+  ]
+}`;
+
+        const model = this.client.getGenerativeModel({ model: 'gemini-pro' });
+        const prompt = `${systemPrompt}\n\nExtract timetable data from the following text:\n\n${text}`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const content = response.text();
+
+        // Parse JSON from response
+        try {
+            // Try to extract JSON from response
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
+            }
+            return JSON.parse(content);
+        } catch (e) {
+            console.error('Failed to parse Gemini response:', e);
+            return {};
+        }
+    }
+
+    async verifyExtraction(originalText: string, extractedData: any): Promise<{ confidence: number; isValid: boolean }> {
+        const model = this.client.getGenerativeModel({ model: 'gemini-pro' });
+        const prompt = `Verify if the following JSON data accurately represents the timetable in the text provided.
+        Original Text: ${originalText.substring(0, 5000)}...
+        Extracted Data: ${JSON.stringify(extractedData)}
+
+        Return ONLY a JSON object with "confidence" (number 0-100) and "isValid" (boolean).
+        Example: {"confidence": 85, "isValid": true}`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const content = response.text();
+
+        try {
+            // Try to extract JSON from response
+            const jsonMatch = content.match(/\{.*\}/s);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
+            }
+            return JSON.parse(content);
+        } catch (e) {
+            console.error('Failed to parse Gemini verification response:', e);
+            return { confidence: 0, isValid: false };
+        }
+    }
+}
+
 export class LLMFactory {
-    static getProvider(type: 'openai' | 'claude' | 'mock' | 'deepseek' = 'openai'): LLMProvider {
+    static getProvider(type: 'openai' | 'claude' | 'mock' | 'deepseek' | 'gemini' = 'openai'): LLMProvider {
         if (type === 'openai' && config.openaiApiKey) {
             return new OpenAIProvider();
         }
@@ -270,6 +394,9 @@ export class LLMFactory {
         }
         if (type === 'deepseek' && config.deepseekApiKey) {
             return new DeepSeekProvider();
+        }
+        if (type === 'gemini' && config.geminiApiKey) {
+            return new GeminiProvider();
         }
         return new MockProvider();
     }
