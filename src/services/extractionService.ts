@@ -1,11 +1,12 @@
 import fs from 'fs';
 const pdfParse = require('pdf-parse');
 import mammoth from 'mammoth';
-import Tesseract from 'tesseract.js';
 const WordExtractor = require('word-extractor');
 import { LLMFactory } from '../factories/llmFactory';
 import { query } from '../db';
 import { TimetablePreprocessor } from '../utils/preprocessor';
+import OpenAI from 'openai';
+import { config } from '../config/env';
 
 export class ExtractionService {
     async processFile(file: Express.Multer.File) {
@@ -16,6 +17,41 @@ export class ExtractionService {
             const dataBuffer = fs.readFileSync(file.path);
             const data = await pdfParse(dataBuffer);
             text = data.text;
+
+            // If PDF has no text (scanned PDF), use DeepSeek vision API for OCR
+            if (!text || text.trim().length < 50) {
+                console.log('PDF appears to be scanned or has minimal text. Using DeepSeek OCR...');
+
+                const deepseekClient = new OpenAI({
+                    apiKey: config.deepseekApiKey,
+                    baseURL: 'https://api.deepseek.com'
+                });
+
+                // Convert PDF to base64
+                const base64Pdf = dataBuffer.toString('base64');
+                const pdfUrl = `data:application/pdf;base64,${base64Pdf}`;
+
+                const response = await deepseekClient.chat.completions.create({
+                    model: 'deepseek-chat',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: 'Extract all text from this PDF document, including any tables, schedules, or structured data. Return the text exactly as it appears, preserving formatting and structure.'
+                                },
+                                {
+                                    type: 'image_url',
+                                    image_url: { url: pdfUrl }
+                                }
+                            ]
+                        }
+                    ]
+                });
+
+                text = response.choices[0].message.content || '';
+            }
         } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             const result = await mammoth.extractRawText({ path: file.path });
             text = result.value;
@@ -24,11 +60,37 @@ export class ExtractionService {
             const extracted = await extractor.extract(file.path);
             text = extracted.getBody();
         } else if (file.mimetype.startsWith('image/')) {
-            // Enhanced OCR configuration for better table detection
-            const result = await Tesseract.recognize(file.path, 'eng', {
-                logger: undefined, // Disable logging for cleaner output
+            // Use DeepSeek vision API for OCR
+            const deepseekClient = new OpenAI({
+                apiKey: config.deepseekApiKey,
+                baseURL: 'https://api.deepseek.com'
             });
-            text = result.data.text;
+
+            // Read image and convert to base64
+            const imageBuffer = fs.readFileSync(file.path);
+            const base64Image = imageBuffer.toString('base64');
+            const imageUrl = `data:${file.mimetype};base64,${base64Image}`;
+
+            const response = await deepseekClient.chat.completions.create({
+                model: 'deepseek-chat',
+                messages: [
+                    {
+                        role: 'user',
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'Extract all text from this image, including any tables, schedules, or structured data. Return the text exactly as it appears, preserving formatting and structure.'
+                            },
+                            {
+                                type: 'image_url',
+                                image_url: { url: imageUrl }
+                            }
+                        ]
+                    }
+                ]
+            });
+
+            text = response.choices[0].message.content || '';
         } else {
             throw new Error('Unsupported file type');
         }
